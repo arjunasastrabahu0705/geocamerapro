@@ -1,694 +1,493 @@
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font-sans); background: #000; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;overflow-x:hidden;}
 
-#app {
-  width: 100%;
-  max-width: 380px;
-  margin: 0 auto;
-  background: #0a0a0a;
-  min-height: 600px;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  border-radius: 16px;
-  overflow: hidden;
+#app{
+  width:100vw;
+  max-width:100%;
+  background:#0a0a0a;
+  display:flex;
+  flex-direction:column;
+  min-height:100svh;
+  font-family:sans-serif;
 }
 
-#topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  background: rgba(0,0,0,0.85);
-  z-index: 10;
+#topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:8px 14px;
+  background:#111;
+  flex-shrink:0;
+}
+.tb-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#fff;}
+.gps-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulse 1.5s infinite;flex-shrink:0;}
+.gps-dot.searching{background:#fbbf24;}
+.gps-dot.error{background:#f87171;animation:none;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+#viewfinder{
+  position:relative;
+  width:100%;
+  flex:1;
+  min-height:0;
+  background:#111;
+  overflow:hidden;
+}
+#video{
+  width:100%;height:100%;
+  object-fit:cover;
+  display:block;
+}
+#no-cam{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  color:#555;gap:10px;font-size:13px;text-align:center;padding:20px;
+}
+#no-cam i{font-size:48px;color:#2a2a2a;}
+#grid-canvas{position:absolute;inset:0;pointer-events:none;display:none;}
+
+#geo-bar{
+  position:absolute;
+  bottom:0;left:0;right:0;
+  padding:28px 12px 10px;
+  background:linear-gradient(transparent,rgba(0,0,0,0.78) 50%);
+}
+.geo-coords{font-size:11px;font-family:monospace;color:#a3e635;letter-spacing:0.3px;}
+.geo-addr{font-size:12px;color:#fff;margin-top:2px;line-height:1.35;}
+.geo-ts{font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;}
+
+#controls{
+  background:#111;
+  padding:10px 14px 12px;
+  flex-shrink:0;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
 }
 
-.topbar-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: #fff;
+.mode-row{
+  display:flex;gap:6px;justify-content:center;
+}
+.mode-btn{
+  font-size:12px;color:#666;
+  padding:5px 14px;border-radius:20px;
+  cursor:pointer;border:0.5px solid transparent;
+  background:none;transition:all 0.15s;
+  min-height:34px;
+}
+.mode-btn.active{color:#fff;border-color:#444;background:#222;}
+
+.ctrl-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-around;
 }
 
-.gps-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: #4ade80;
-  animation: pulse 1.5s infinite;
+.ic-btn{
+  background:#1f1f1f;
+  border:0.5px solid #333;
+  border-radius:50%;
+  width:52px;height:52px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:#ccc;font-size:22px;
+  flex-shrink:0;
+  transition:background 0.12s;
 }
-.gps-dot.searching { background: #fbbf24; }
-.gps-dot.error { background: #f87171; animation: none; }
+.ic-btn:active{background:#333;transform:scale(0.93);}
+.ic-btn.on{color:#fbbf24;border-color:#fbbf24;}
+.ic-btn.cam-on{color:#4ade80;border-color:#4ade80;}
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+#shutter{
+  width:76px;height:76px;
+  border-radius:50%;
+  background:#fff;
+  border:none;
+  outline:4px solid #444;
+  cursor:pointer;
+  flex-shrink:0;
+  transition:transform 0.1s,background 0.1s;
 }
+#shutter:active{transform:scale(0.91);background:#ddd;}
+#shutter.snap{background:#f87171;}
+#shutter:disabled{background:#444;outline-color:#333;cursor:not-allowed;}
 
-#viewfinder-wrap {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 4/3;
-  background: #111;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-#video {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-#no-cam {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  color: #555; gap: 10px; font-size: 13px;
-}
-
-#no-cam i { font-size: 40px; color: #333; }
-
-#canvas-overlay {
-  position: absolute; inset: 0;
-  pointer-events: none;
+#statusbar{
+  font-size:11px;color:#444;
+  text-align:center;
+  padding:4px 14px 6px;
+  background:#0a0a0a;
+  flex-shrink:0;
 }
 
-#crosshair {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 40px; height: 40px;
-  pointer-events: none;
+#preview-wrap{
+  background:#0d0d0d;
+  padding:12px 14px;
+  flex-shrink:0;
+  display:none;
+  flex-direction:column;
+  gap:10px;
 }
-.ch-h, .ch-v {
-  position: absolute;
-  background: rgba(255,255,255,0.5);
-}
-.ch-h { height: 1px; width: 100%; top: 50%; left: 0; transform: translateY(-50%); }
-.ch-v { width: 1px; height: 100%; left: 50%; top: 0; transform: translateX(-50%); }
+#preview-wrap.show{display:flex;}
 
-#geo-overlay {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  padding: 8px 12px 10px;
-  background: linear-gradient(transparent, rgba(0,0,0,0.75) 40%);
-}
+.prev-lbl{font-size:11px;color:#555;letter-spacing:0.5px;}
 
-.geo-line {
-  display: flex; align-items: center; gap: 5px;
-  color: #fff;
+#prev-frame{
+  position:relative;
+  border-radius:10px;overflow:hidden;
+  border:0.5px solid #222;
 }
+#prev-img{width:100%;display:block;}
 
-.geo-line i { font-size: 11px; color: #4ade80; }
-.geo-coords { font-size: 10px; font-family: var(--font-mono, monospace); color: #a3e635; letter-spacing: 0.3px; }
-.geo-address { font-size: 11px; color: #fff; line-height: 1.3; margin-top: 2px; }
-.geo-ts { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 1px; }
+#prev-stamp{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:24px 10px 10px;
+  background:linear-gradient(transparent,rgba(0,0,0,0.82) 50%);
+}
+.ps-brand{font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;}
+.ps-coord{font-size:10px;color:#a3e635;font-family:monospace;}
+.ps-addr{font-size:11px;color:#fff;line-height:1.35;margin-top:2px;}
+.ps-ts{font-size:9px;color:rgba(255,255,255,0.5);margin-top:2px;}
 
-#controls {
-  background: #111;
-  padding: 16px 14px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.act-row{display:flex;gap:8px;}
+.act-btn{
+  flex:1;padding:12px 8px;
+  border-radius:10px;
+  border:0.5px solid #2a2a2a;
+  background:#1a1a1a;
+  color:#ccc;font-size:13px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  min-height:46px;
+  transition:background 0.12s;
 }
-
-.ctrl-row {
-  display: flex; align-items: center;
-  justify-content: space-between; gap: 8px;
-}
-
-.icon-btn {
-  background: #1f1f1f;
-  border: 0.5px solid #333;
-  border-radius: 50%;
-  width: 44px; height: 44px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: #ccc;
-  font-size: 18px;
-  transition: background 0.15s;
-  flex-shrink: 0;
-}
-.icon-btn:hover { background: #2a2a2a; }
-.icon-btn:active { background: #333; transform: scale(0.95); }
-.icon-btn.active { color: #fbbf24; border-color: #fbbf24; }
-
-#shutter {
-  width: 68px; height: 68px;
-  border-radius: 50%;
-  background: #fff;
-  border: 3px solid #555;
-  cursor: pointer;
-  position: relative;
-  flex-shrink: 0;
-  transition: transform 0.1s, background 0.1s;
-  outline: 4px solid #333;
-}
-#shutter:hover { background: #e5e5e5; }
-#shutter:active { transform: scale(0.93); background: #ccc; }
-#shutter.capturing { background: #f87171; }
-
-.mode-tabs {
-  display: flex; gap: 6px;
-  justify-content: center;
-}
-.mode-tab {
-  font-size: 11px; color: #666;
-  padding: 4px 10px;
-  border-radius: 20px;
-  cursor: pointer;
-  border: 0.5px solid transparent;
-  transition: all 0.15s;
-}
-.mode-tab.active {
-  color: #fff; border-color: #444;
-  background: #222;
-}
-
-#preview-section {
-  background: #0d0d0d;
-  padding: 12px 14px;
-  display: none;
-  flex-direction: column;
-  gap: 10px;
-}
-
-#preview-section.show { display: flex; }
-
-.preview-label {
-  font-size: 11px; color: #666;
-  text-transform: uppercase; letter-spacing: 0.5px;
-}
-
-#preview-wrap {
-  position: relative;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 0.5px solid #2a2a2a;
-}
-
-#preview-img {
-  width: 100%;
-  display: block;
-}
-
-#preview-stamp {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  padding: 8px 10px 10px;
-  background: linear-gradient(transparent, rgba(0,0,0,0.82) 40%);
-}
-
-.stamp-brand {
-  font-size: 9px; color: rgba(255,255,255,0.5);
-  letter-spacing: 1px; text-transform: uppercase;
-  margin-bottom: 2px;
-}
-.stamp-coords {
-  font-size: 10px; color: #a3e635;
-  font-family: var(--font-mono, monospace);
-  letter-spacing: 0.3px;
-}
-.stamp-address {
-  font-size: 11px; color: #fff;
-  line-height: 1.35; margin-top: 2px;
-}
-.stamp-time {
-  font-size: 9px; color: rgba(255,255,255,0.55);
-  margin-top: 2px;
-}
-
-.action-row {
-  display: flex; gap: 8px;
-}
-
-.act-btn {
-  flex: 1;
-  padding: 10px;
-  border-radius: 10px;
-  border: 0.5px solid #2a2a2a;
-  background: #1a1a1a;
-  color: #ccc;
-  font-size: 13px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  transition: background 0.15s;
-}
-.act-btn:hover { background: #222; }
-.act-btn:active { background: #2a2a2a; transform: scale(0.97); }
-.act-btn.wa {
-  background: #16532d;
-  color: #4ade80;
-  border-color: #1a6335;
-}
-.act-btn.wa:hover { background: #1a6335; }
-
-.act-btn i { font-size: 16px; }
-
-#status-bar {
-  padding: 4px 14px 8px;
-  font-size: 10px;
-  color: #444;
-  text-align: center;
-  background: #0a0a0a;
-}
-
-.accuracy-badge {
-  display: inline-flex; align-items: center; gap: 3px;
-  background: rgba(74, 222, 128, 0.12);
-  color: #4ade80;
-  padding: 2px 6px; border-radius: 4px;
-  font-size: 9px;
-}
-
-.zoom-row {
-  display: flex; align-items: center; gap: 8px;
-}
-.zoom-btn {
-  background: rgba(255,255,255,0.08);
-  border: 0.5px solid #333;
-  border-radius: 6px;
-  padding: 4px 10px;
-  color: #aaa; font-size: 11px;
-  cursor: pointer;
-}
-.zoom-btn.active-z { color: #fff; background: rgba(255,255,255,0.15); }
+.act-btn:active{background:#2a2a2a;transform:scale(0.97);}
+.act-btn i{font-size:18px;}
+.act-btn.wa{background:#16532d;color:#4ade80;border-color:#1a6335;}
+.act-btn.wa:active{background:#1a6335;}
 </style>
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 
 <div id="app">
   <div id="topbar">
-    <div class="topbar-info">
+    <div class="tb-item">
       <div class="gps-dot searching" id="gps-dot"></div>
-      <span id="gps-status">Mencari GPS...</span>
+      <span id="gps-lbl" style="font-size:11px">Mencari GPS...</span>
     </div>
-    <div class="topbar-info">
-      <span id="accuracy-display" style="color:#666">—</span>
-    </div>
-    <div class="topbar-info">
-      <i class="ti ti-clock" style="font-size:12px;color:#555"></i>
-      <span id="clock">--:--</span>
-    </div>
+    <div class="tb-item" style="font-size:11px;color:#555" id="acc-lbl">—</div>
+    <div class="tb-item" style="font-size:11px;color:#888" id="clock">--:--</div>
   </div>
 
-  <div id="viewfinder-wrap">
+  <div id="viewfinder">
     <video id="video" autoplay playsinline muted></video>
     <div id="no-cam">
       <i class="ti ti-camera-off" aria-hidden="true"></i>
-      <span>Tekan ikon kamera untuk mulai</span>
+      <span style="color:#555">Tekan tombol kamera<br>untuk memulai</span>
     </div>
-    <canvas id="canvas-overlay" style="display:none"></canvas>
-    <div id="crosshair" style="display:none">
-      <div class="ch-h"></div>
-      <div class="ch-v"></div>
-    </div>
-    <div id="geo-overlay">
-      <div class="geo-line">
-        <i class="ti ti-map-pin" aria-hidden="true"></i>
-        <span class="geo-coords" id="live-coords">Menunggu GPS...</span>
-      </div>
-      <div class="geo-address" id="live-address">Mengambil lokasi...</div>
+    <canvas id="grid-canvas"></canvas>
+    <div id="geo-bar">
+      <div class="geo-coords" id="live-coords">Menunggu GPS...</div>
+      <div class="geo-addr" id="live-addr">Mengambil lokasi...</div>
       <div class="geo-ts" id="live-ts"></div>
     </div>
   </div>
 
   <div id="controls">
-    <div class="mode-tabs">
-      <div class="mode-tab active" data-mode="photo">Foto</div>
-      <div class="mode-tab" data-mode="wide">Lebar</div>
-      <div class="mode-tab" data-mode="square">Kotak</div>
+    <div class="mode-row">
+      <button class="mode-btn active" data-mode="photo">Foto</button>
+      <button class="mode-btn" data-mode="wide">Lebar 16:9</button>
+      <button class="mode-btn" data-mode="square">Kotak 1:1</button>
     </div>
     <div class="ctrl-row">
-      <button class="icon-btn" id="btn-flash" title="Flash" aria-label="Toggle flash">
+      <button class="ic-btn" id="btn-flash" aria-label="Flash">
         <i class="ti ti-bolt" aria-hidden="true"></i>
       </button>
-      <button class="icon-btn" id="btn-cam" title="Buka kamera" aria-label="Buka kamera">
+      <button class="ic-btn" id="btn-cam" aria-label="Buka kamera">
         <i class="ti ti-camera" aria-hidden="true"></i>
       </button>
-      <button id="shutter" aria-label="Ambil foto" title="Ambil foto" disabled></button>
-      <button class="icon-btn" id="btn-flip" title="Ganti kamera" aria-label="Ganti kamera">
+      <button id="shutter" aria-label="Ambil foto" disabled></button>
+      <button class="ic-btn" id="btn-flip" aria-label="Ganti kamera">
         <i class="ti ti-camera-rotate" aria-hidden="true"></i>
       </button>
-      <button class="icon-btn" id="btn-grid" title="Grid" aria-label="Toggle grid">
+      <button class="ic-btn" id="btn-grid" aria-label="Grid">
         <i class="ti ti-grid-dots" aria-hidden="true"></i>
       </button>
     </div>
-    <div class="zoom-row" id="zoom-row" style="display:none">
-      <button class="zoom-btn" data-z="1">1×</button>
-      <button class="zoom-btn active-z" data-z="1">1×</button>
-      <button class="zoom-btn" data-z="2">2×</button>
-      <button class="zoom-btn" data-z="3">3×</button>
-    </div>
   </div>
 
-  <div id="preview-section">
-    <div class="preview-label">Hasil foto</div>
-    <div id="preview-wrap">
-      <img id="preview-img" alt="Preview foto">
-      <div id="preview-stamp">
-        <div class="stamp-brand">GeoCamera Pro</div>
-        <div class="stamp-coords" id="stamp-coords"></div>
-        <div class="stamp-address" id="stamp-address"></div>
-        <div class="stamp-time" id="stamp-time"></div>
+  <div id="statusbar">Izinkan akses kamera &amp; lokasi untuk memulai</div>
+
+  <div id="preview-wrap">
+    <div class="prev-lbl">HASIL FOTO</div>
+    <div id="prev-frame">
+      <img id="prev-img" alt="Preview foto">
+      <div id="prev-stamp">
+        <div class="ps-brand">GeoCamera Pro</div>
+        <div class="ps-coord" id="ps-coord"></div>
+        <div class="ps-addr" id="ps-addr"></div>
+        <div class="ps-ts" id="ps-ts"></div>
       </div>
     </div>
-    <div class="action-row">
-      <button class="act-btn" id="btn-save">
-        <i class="ti ti-download" aria-hidden="true"></i> Simpan
-      </button>
-      <button class="act-btn wa" id="btn-wa">
-        <i class="ti ti-brand-whatsapp" aria-hidden="true"></i> WhatsApp
-      </button>
+    <div class="act-row">
+      <button class="act-btn" id="btn-save"><i class="ti ti-download" aria-hidden="true"></i> Simpan</button>
+      <button class="act-btn wa" id="btn-wa"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> WhatsApp</button>
     </div>
-    <div class="action-row">
-      <button class="act-btn" id="btn-retake">
-        <i class="ti ti-refresh" aria-hidden="true"></i> Foto ulang
-      </button>
-      <button class="act-btn" id="btn-copy-geo">
-        <i class="ti ti-copy" aria-hidden="true"></i> Salin lokasi
-      </button>
+    <div class="act-row">
+      <button class="act-btn" id="btn-retake"><i class="ti ti-refresh" aria-hidden="true"></i> Foto ulang</button>
+      <button class="act-btn" id="btn-copy"><i class="ti ti-copy" aria-hidden="true"></i> Salin lokasi</button>
     </div>
   </div>
-
-  <div id="status-bar" id="status-bar">Izinkan akses kamera &amp; lokasi untuk memulai</div>
 </div>
 
 <canvas id="final-canvas" style="display:none"></canvas>
 
 <script>
 const $ = id => document.getElementById(id);
-let stream = null, facingMode = 'environment', geoData = null, lastPhoto = null;
-let flashOn = false, gridOn = false, currentMode = 'photo', cameraReady = false;
-let geoInterval = null;
+let stream=null, facingMode='environment', geo=null, lastPhoto=null;
+let flashOn=false, gridOn=false, mode='photo', camReady=false;
 
-function updateClock() {
-  const now = new Date();
-  const h = String(now.getHours()).padStart(2,'0');
-  const m = String(now.getMinutes()).padStart(2,'0');
-  $('clock').textContent = h + ':' + m;
+function tick(){
+  const n=new Date();
+  $('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
 }
-updateClock();
-setInterval(updateClock, 10000);
+tick(); setInterval(tick,15000);
 
-function setStatus(msg) {
-  $('status-bar').textContent = msg;
+function setStatus(t){$('statusbar').textContent=t;}
+
+function setViewfinderHeight(){
+  const app=$('app');
+  const topbar=$('topbar');
+  const ctrl=$('controls');
+  const sb=$('statusbar');
+  const pw=$('preview-wrap');
+  const avail=window.innerHeight - topbar.offsetHeight - ctrl.offsetHeight - sb.offsetHeight - (pw.classList.contains('show')?pw.offsetHeight:0);
+  $('viewfinder').style.height = Math.max(avail, 180)+'px';
+}
+window.addEventListener('resize', setViewfinderHeight);
+setTimeout(setViewfinderHeight, 100);
+
+async function reverseGeo(lat,lon){
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=id&addressdetails=1`,{headers:{'User-Agent':'GeoCamera/1.0'}});
+    const d=await r.json();
+    if(!d||d.error)return null;
+    const a=d.address||{};
+    const p=[];
+    const road=a.road||a.pedestrian||a.footway||a.path;
+    if(road)p.push(road+(a.house_number?' No.'+a.house_number:''));
+    if(a.suburb||a.neighbourhood||a.village)p.push(a.suburb||a.neighbourhood||a.village);
+    if(a.city_district||a.county)p.push(a.city_district||a.county);
+    if(a.city||a.town||a.municipality)p.push(a.city||a.town||a.municipality);
+    if(a.state)p.push(a.state);
+    return p.filter(Boolean).join(', ')||d.display_name.split(',').slice(0,4).join(',');
+  }catch(e){return null;}
 }
 
-async function reverseGeocode(lat, lon) {
-  try {
-    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=id&addressdetails=1`;
-    const res = await fetch(url, { headers: { 'User-Agent': 'GeoCamera/1.0' } });
-    const data = await res.json();
-    if (!data || data.error) return null;
-    const a = data.address || {};
-    const parts = [];
-    if (a.road || a.pedestrian || a.footway) parts.push(a.road || a.pedestrian || a.footway);
-    if (a.house_number) parts[0] = (parts[0] || '') + ' No.' + a.house_number;
-    if (a.suburb || a.neighbourhood || a.village) parts.push(a.suburb || a.neighbourhood || a.village);
-    if (a.city_district || a.county) parts.push(a.city_district || a.county);
-    if (a.city || a.town || a.municipality) parts.push(a.city || a.town || a.municipality);
-    if (a.state) parts.push(a.state);
-    return parts.filter(Boolean).join(', ') || data.display_name.split(',').slice(0,4).join(',');
-  } catch(e) { return null; }
-}
-
-function startGeo() {
-  if (!navigator.geolocation) {
-    $('gps-dot').className = 'gps-dot error';
-    $('gps-status').textContent = 'GPS tidak tersedia';
-    $('live-coords').textContent = 'GPS tidak tersedia';
-    $('live-address').textContent = 'Perangkat tidak mendukung GPS';
+function startGeo(){
+  if(!navigator.geolocation){
+    $('gps-dot').className='gps-dot error';
+    $('gps-lbl').textContent='GPS N/A';
+    $('live-coords').textContent='GPS tidak tersedia';
+    $('live-addr').textContent='Perangkat tidak mendukung GPS';
     return;
   }
-  $('gps-dot').className = 'gps-dot searching';
-  $('gps-status').textContent = 'Mencari GPS...';
-
-  const opts = { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 };
-
-  navigator.geolocation.watchPosition(async pos => {
-    const { latitude: lat, longitude: lon, accuracy } = pos.coords;
-    const now = new Date();
-    const ts = now.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' })
-      + ' ' + now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-
-    $('gps-dot').className = 'gps-dot';
-    $('gps-status').textContent = 'GPS Aktif';
-    $('live-coords').textContent = lat.toFixed(6) + ', ' + lon.toFixed(6);
-    $('live-ts').textContent = ts;
-
-    const accText = accuracy < 10 ? '±' + Math.round(accuracy) + 'm ✦' : '±' + Math.round(accuracy) + 'm';
-    $('accuracy-display').innerHTML = `<span class="accuracy-badge"><i class="ti ti-crosshair"></i>${accText}</span>`;
-
-    if (!geoData || Math.abs(lat - geoData.lat) > 0.00005 || Math.abs(lon - geoData.lon) > 0.00005) {
-      $('live-address').textContent = 'Memuat alamat...';
-      const addr = await reverseGeocode(lat, lon);
-      const displayAddr = addr || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-      $('live-address').textContent = displayAddr;
-      geoData = { lat, lon, accuracy, address: displayAddr, timestamp: ts };
-    } else {
-      geoData.timestamp = ts;
-    }
-  }, err => {
-    $('gps-dot').className = 'gps-dot error';
-    let msg = 'GPS error';
-    if (err.code === 1) msg = 'Izin GPS ditolak';
-    else if (err.code === 2) msg = 'Sinyal GPS lemah';
-    else if (err.code === 3) msg = 'GPS timeout';
-    $('gps-status').textContent = msg;
-    $('live-coords').textContent = msg;
-    $('live-address').textContent = 'Aktifkan GPS di pengaturan';
-    geoData = { lat: null, lon: null, accuracy: null, address: 'Lokasi tidak tersedia', timestamp: new Date().toLocaleString('id-ID') };
-  }, opts);
+  navigator.geolocation.watchPosition(async pos=>{
+    const {latitude:lat,longitude:lon,accuracy:acc}=pos.coords;
+    const now=new Date();
+    const ts=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    $('gps-dot').className='gps-dot';
+    $('gps-lbl').textContent='GPS Aktif';
+    $('live-coords').textContent=lat.toFixed(6)+', '+lon.toFixed(6);
+    $('live-ts').textContent=ts;
+    $('acc-lbl').textContent='±'+Math.round(acc)+'m';
+    if(!geo||Math.abs(lat-(geo.lat||0))>0.00005||Math.abs(lon-(geo.lon||0))>0.00005){
+      $('live-addr').textContent='Memuat alamat...';
+      const addr=await reverseGeo(lat,lon);
+      $('live-addr').textContent=addr||lat.toFixed(5)+', '+lon.toFixed(5);
+      geo={lat,lon,acc,address:addr||lat.toFixed(5)+', '+lon.toFixed(5),ts};
+    }else{geo.ts=ts;}
+  },err=>{
+    $('gps-dot').className='gps-dot error';
+    const msg=err.code===1?'Izin GPS ditolak':err.code===2?'Sinyal lemah':'GPS timeout';
+    $('gps-lbl').textContent=msg;
+    $('live-coords').textContent=msg;
+    $('live-addr').textContent='Aktifkan GPS di pengaturan';
+    geo={lat:null,lon:null,acc:null,address:'Lokasi tidak tersedia',ts:new Date().toLocaleString('id-ID')};
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:5000});
 }
-
 startGeo();
 
-async function startCamera() {
-  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-  const constraints = { video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1440 } }, audio: false };
-  try {
-    stream = await navigator.mediaDevices.getUserMedia(constraints);
-    $('video').srcObject = stream;
-    $('video').style.display = 'block';
-    $('no-cam').style.display = 'none';
-    $('crosshair').style.display = gridOn ? 'none' : 'block';
-    $('shutter').disabled = false;
-    cameraReady = true;
-    setStatus('Kamera aktif — siap mengambil foto');
-    $('btn-cam').querySelector('i').className = 'ti ti-camera-check';
-    $('btn-cam').style.borderColor = '#4ade80';
-    $('btn-cam').style.color = '#4ade80';
-    $('zoom-row').style.display = 'flex';
-  } catch(e) {
-    setStatus('Gagal mengakses kamera: ' + e.message);
-    $('video').style.display = 'none';
-    $('no-cam').style.display = 'flex';
+async function startCamera(){
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode,width:{ideal:1920},height:{ideal:1440}},audio:false});
+    $('video').srcObject=stream;
+    $('video').style.display='block';
+    $('no-cam').style.display='none';
+    $('shutter').disabled=false;
+    camReady=true;
+    setStatus('Kamera aktif — siap memotret');
+    $('btn-cam').innerHTML='<i class="ti ti-camera-check" aria-hidden="true"></i>';
+    $('btn-cam').classList.add('cam-on');
+    if(gridOn)drawGrid();
+    setViewfinderHeight();
+  }catch(e){
+    setStatus('Gagal akses kamera: '+e.message);
+    $('video').style.display='none';
+    $('no-cam').style.display='flex';
   }
 }
 
-$('btn-cam').addEventListener('click', startCamera);
-$('btn-flip').addEventListener('click', () => {
-  facingMode = facingMode === 'environment' ? 'user' : 'environment';
-  if (cameraReady) startCamera();
+$('btn-cam').addEventListener('click',startCamera);
+
+$('btn-flip').addEventListener('click',()=>{
+  facingMode=facingMode==='environment'?'user':'environment';
+  if(camReady)startCamera();
+  setStatus(facingMode==='user'?'Kamera depan aktif':'Kamera belakang aktif');
 });
 
-$('btn-flash').addEventListener('click', () => {
-  flashOn = !flashOn;
-  $('btn-flash').classList.toggle('active', flashOn);
-  setStatus(flashOn ? 'Flash aktif' : 'Flash mati');
-  if (stream) {
-    const track = stream.getVideoTracks()[0];
-    if (track && track.getCapabilities && track.getCapabilities().torch) {
-      track.applyConstraints({ advanced: [{ torch: flashOn }] });
-    }
+$('btn-flash').addEventListener('click',()=>{
+  flashOn=!flashOn;
+  $('btn-flash').classList.toggle('on',flashOn);
+  setStatus(flashOn?'Flash ON':'Flash OFF');
+  if(stream){
+    const t=stream.getVideoTracks()[0];
+    if(t&&t.getCapabilities&&t.getCapabilities().torch)t.applyConstraints({advanced:[{torch:flashOn}]});
   }
 });
 
-$('btn-grid').addEventListener('click', () => {
-  gridOn = !gridOn;
-  $('btn-grid').classList.toggle('active', gridOn);
-  drawGrid(gridOn);
+$('btn-grid').addEventListener('click',()=>{
+  gridOn=!gridOn;
+  $('btn-grid').classList.toggle('on',gridOn);
+  if(gridOn)drawGrid();else{$('grid-canvas').style.display='none';}
 });
 
-function drawGrid(show) {
-  const c = $('canvas-overlay');
-  const vw = $('viewfinder-wrap');
-  if (show) {
-    c.style.display = 'block';
-    c.width = vw.offsetWidth; c.height = vw.offsetHeight;
-    const ctx = c.getContext('2d');
-    ctx.clearRect(0,0,c.width,c.height);
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.lineWidth = 0.5;
-    [1/3, 2/3].forEach(f => {
-      ctx.beginPath(); ctx.moveTo(c.width*f, 0); ctx.lineTo(c.width*f, c.height); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, c.height*f); ctx.lineTo(c.width, c.height*f); ctx.stroke();
-    });
-  } else {
-    c.style.display = 'none';
-  }
+function drawGrid(){
+  const c=$('grid-canvas'),vf=$('viewfinder');
+  c.width=vf.offsetWidth;c.height=vf.offsetHeight;
+  c.style.display='block';
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=0.7;
+  [1/3,2/3].forEach(f=>{
+    ctx.beginPath();ctx.moveTo(c.width*f,0);ctx.lineTo(c.width*f,c.height);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,c.height*f);ctx.lineTo(c.width,c.height*f);ctx.stroke();
+  });
 }
 
-document.querySelectorAll('.mode-tab').forEach(t => {
-  t.addEventListener('click', () => {
-    document.querySelectorAll('.mode-tab').forEach(x => x.classList.remove('active'));
-    t.classList.add('active');
-    currentMode = t.dataset.mode;
+document.querySelectorAll('.mode-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');mode=b.dataset.mode;
   });
 });
 
-document.querySelectorAll('.zoom-btn').forEach(b => {
-  b.addEventListener('click', () => {
-    document.querySelectorAll('.zoom-btn').forEach(x => x.classList.remove('active-z'));
-    b.classList.add('active-z');
-  });
-});
+$('shutter').addEventListener('click',takePhoto);
 
-$('shutter').addEventListener('click', takePhoto);
-
-async function takePhoto() {
-  if (!cameraReady || !stream) { setStatus('Buka kamera terlebih dahulu'); return; }
-  const shutter = $('shutter');
-  shutter.classList.add('capturing');
-  setTimeout(() => shutter.classList.remove('capturing'), 200);
-
-  const video = $('video');
-  const canvas = $('final-canvas');
-  const vw = video.videoWidth || 1280;
-  const vh = video.videoHeight || 960;
-
-  let cw = vw, ch = vh;
-  if (currentMode === 'square') { cw = Math.min(vw, vh); ch = cw; }
-  else if (currentMode === 'wide') { ch = Math.round(vw * 9/16); }
-
-  canvas.width = cw; canvas.height = ch;
-  const ctx = canvas.getContext('2d');
-
-  const sx = (vw - cw) / 2, sy = (vh - ch) / 2;
-  ctx.drawImage(video, sx, sy, cw, ch, 0, 0, cw, ch);
-
-  const now = geoData || {};
-  const lat = now.lat ? now.lat.toFixed(6) : '—';
-  const lon = now.lon ? now.lon.toFixed(6) : '—';
-  const address = now.address || 'Lokasi tidak tersedia';
-  const ts = now.timestamp || new Date().toLocaleString('id-ID');
-  const acc = now.accuracy ? '±' + Math.round(now.accuracy) + 'm' : '';
-
-  const stampH = Math.round(ch * 0.22);
-  const pad = Math.round(ch * 0.015);
-  const gradY = ch - stampH;
-  const grad = ctx.createLinearGradient(0, gradY, 0, ch);
-  grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(0.4, 'rgba(0,0,0,0.75)');
-  grad.addColorStop(1, 'rgba(0,0,0,0.9)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, gradY, cw, stampH);
-
-  const scale = cw / 380;
-  const baseFontSize = Math.round(9 * scale);
-  const coordFontSize = Math.round(10 * scale);
-  const addrFontSize = Math.round(11 * scale);
-  const lh = Math.round(14 * scale);
-
-  ctx.textBaseline = 'bottom';
-
-  let lineY = ch - pad;
-
-  ctx.font = `${baseFontSize}px monospace`;
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.fillText(ts + (acc ? '  ' + acc : ''), pad, lineY);
-  lineY -= lh + 2;
-
-  const maxAddrW = cw - pad * 2;
-  const addrLines = wrapText(ctx, address, `${addrFontSize}px sans-serif`, maxAddrW);
-  ctx.font = `${addrFontSize}px sans-serif`;
-  ctx.fillStyle = '#ffffff';
-  for (let i = addrLines.length - 1; i >= 0; i--) {
-    ctx.fillText(addrLines[i], pad, lineY);
-    lineY -= lh + 1;
+function wrapText(ctx,text,maxW){
+  const words=text.split(' ');const lines=[];let line='';
+  for(const w of words){
+    const t=line?line+' '+w:w;
+    if(ctx.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;
   }
+  if(line)lines.push(line);
+  return lines.slice(0,3);
+}
 
-  ctx.font = `${coordFontSize}px monospace`;
-  ctx.fillStyle = '#a3e635';
-  ctx.fillText(`${lat}, ${lon}`, pad, lineY);
-  lineY -= lh;
+async function takePhoto(){
+  if(!camReady||!stream)return;
+  const sh=$('shutter');
+  sh.classList.add('snap');setTimeout(()=>sh.classList.remove('snap'),150);
+  const vid=$('video');
+  const fc=$('final-canvas');
+  const vw=vid.videoWidth||1280,vh=vid.videoHeight||960;
+  let cw=vw,ch=vh;
+  if(mode==='square'){cw=Math.min(vw,vh);ch=cw;}
+  else if(mode==='wide'){ch=Math.round(vw*9/16);}
+  fc.width=cw;fc.height=ch;
+  const ctx=fc.getContext('2d');
+  ctx.drawImage(vid,(vw-cw)/2,(vh-ch)/2,cw,ch,0,0,cw,ch);
 
-  ctx.font = `${baseFontSize}px sans-serif`;
-  ctx.fillStyle = 'rgba(255,255,255,0.45)';
-  ctx.fillText('GeoCamera Pro', pad, lineY);
+  const g=geo||{};
+  const lat=g.lat?g.lat.toFixed(6):'—';
+  const lon=g.lon?g.lon.toFixed(6):'—';
+  const addr=g.address||'Lokasi tidak tersedia';
+  const ts=g.ts||new Date().toLocaleString('id-ID');
+  const accStr=g.acc?'  ±'+Math.round(g.acc)+'m':'';
 
-  const dataURL = canvas.toDataURL('image/jpeg', 0.92);
-  lastPhoto = { dataURL, lat, lon, address, ts };
+  const scale=cw/380;
+  const p=Math.round(10*scale);
+  const lh=Math.round(15*scale);
+  const stampH=Math.round(ch*0.25);
+  const grad=ctx.createLinearGradient(0,ch-stampH,0,ch);
+  grad.addColorStop(0,'rgba(0,0,0,0)');
+  grad.addColorStop(0.4,'rgba(0,0,0,0.72)');
+  grad.addColorStop(1,'rgba(0,0,0,0.9)');
+  ctx.fillStyle=grad;ctx.fillRect(0,ch-stampH,cw,stampH);
 
-  $('preview-img').src = dataURL;
-  $('stamp-coords').textContent = lat + ', ' + lon;
-  $('stamp-address').textContent = address;
-  $('stamp-time').textContent = ts;
+  ctx.textBaseline='bottom';
+  let y=ch-p;
+  ctx.font=`${Math.round(9*scale)}px monospace`;ctx.fillStyle='rgba(255,255,255,0.45)';
+  ctx.fillText(ts+accStr,p,y);y-=lh+1;
+  ctx.font=`${Math.round(11*scale)}px sans-serif`;ctx.fillStyle='#fff';
+  const lines=wrapText(ctx,addr,cw-p*2);
+  for(let i=lines.length-1;i>=0;i--){ctx.fillText(lines[i],p,y);y-=lh;}
+  ctx.font=`${Math.round(10*scale)}px monospace`;ctx.fillStyle='#a3e635';
+  ctx.fillText(lat+', '+lon,p,y);y-=lh;
+  ctx.font=`${Math.round(9*scale)}px sans-serif`;ctx.fillStyle='rgba(255,255,255,0.4)';
+  ctx.fillText('GeoCamera Pro',p,y);
 
-  $('preview-section').classList.add('show');
-  $('preview-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const url=fc.toDataURL('image/jpeg',0.93);
+  lastPhoto={url,lat,lon,address:addr,ts};
+
+  $('prev-img').src=url;
+  $('ps-coord').textContent=lat+', '+lon;
+  $('ps-addr').textContent=addr;
+  $('ps-ts').textContent=ts;
+  $('preview-wrap').classList.add('show');
+  setTimeout(()=>{$('preview-wrap').scrollIntoView({behavior:'smooth',block:'nearest'});},100);
+  setTimeout(setViewfinderHeight,200);
   setStatus('Foto berhasil diambil dengan geotag!');
 }
 
-function wrapText(ctx, text, font, maxW) {
-  ctx.font = font;
-  const words = text.split(' ');
-  const lines = []; let line = '';
-  for (const w of words) {
-    const test = line ? line + ' ' + w : w;
-    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
-    else line = test;
-  }
-  if (line) lines.push(line);
-  return lines.slice(0, 3);
-}
-
-$('btn-retake').addEventListener('click', () => {
-  $('preview-section').classList.remove('show');
-  lastPhoto = null;
-  setStatus('Siap mengambil foto berikutnya');
+$('btn-retake').addEventListener('click',()=>{
+  $('preview-wrap').classList.remove('show');
+  lastPhoto=null;
+  setTimeout(setViewfinderHeight,100);
+  setStatus('Siap memotret lagi');
 });
 
-$('btn-save').addEventListener('click', () => {
-  if (!lastPhoto) return;
-  const a = document.createElement('a');
-  a.href = lastPhoto.dataURL;
-  const d = new Date().toISOString().slice(0,19).replace(/:/g,'-');
-  a.download = `geocam_${d}.jpg`;
+$('btn-save').addEventListener('click',()=>{
+  if(!lastPhoto)return;
+  const a=document.createElement('a');
+  a.href=lastPhoto.url;
+  a.download='geocam_'+new Date().toISOString().slice(0,19).replace(/:/g,'-')+'.jpg';
   a.click();
-  setStatus('Foto disimpan ke galeri!');
+  setStatus('Foto tersimpan!');
 });
 
-$('btn-wa').addEventListener('click', async () => {
-  if (!lastPhoto) return;
-  const msg = `📍 *GeoCamera Pro*\n\n📌 Koordinat: ${lastPhoto.lat}, ${lastPhoto.lon}\n🏠 Alamat: ${lastPhoto.address}\n🕐 Waktu: ${lastPhoto.ts}`;
-
-  try {
-    const res = await fetch(lastPhoto.dataURL);
-    const blob = await res.blob();
-    const file = new File([blob], 'geophoto.jpg', { type: 'image/jpeg' });
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'GeoCamera Photo', text: msg });
-      setStatus('Dibagikan via WhatsApp!');
-      return;
+$('btn-wa').addEventListener('click',async()=>{
+  if(!lastPhoto)return;
+  const msg=`📍 *GeoCamera Pro*\n\n📌 Koordinat: ${lastPhoto.lat}, ${lastPhoto.lon}\n🏠 Alamat: ${lastPhoto.address}\n🕐 Waktu: ${lastPhoto.ts}`;
+  try{
+    const res=await fetch(lastPhoto.url);
+    const blob=await res.blob();
+    const file=new File([blob],'geophoto.jpg',{type:'image/jpeg'});
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'GeoCamera Photo',text:msg});
+      setStatus('Berhasil dibagikan!');return;
     }
-  } catch(e) {}
-
-  const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-  window.open(waUrl, '_blank');
+  }catch(e){}
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
   setStatus('Membuka WhatsApp...');
 });
 
-$('btn-copy-geo').addEventListener('click', () => {
-  if (!lastPhoto) return;
-  const txt = `${lastPhoto.lat}, ${lastPhoto.lon} — ${lastPhoto.address}`;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(txt).then(() => setStatus('Koordinat disalin!'));
-  } else {
-    setStatus(txt);
-  }
+$('btn-copy').addEventListener('click',()=>{
+  if(!lastPhoto)return;
+  const t=lastPhoto.lat+', '+lastPhoto.lon+' — '+lastPhoto.address;
+  navigator.clipboard&&navigator.clipboard.writeText(t).then(()=>setStatus('Koordinat disalin!'));
 });
 </script>
